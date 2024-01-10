@@ -1,0 +1,47 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: redis-deployment
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: redis
+  template:
+    metadata:
+      labels:
+        app: redis
+    spec:
+      volumes:
+        - name: redis-config
+          emptyDir: {}
+        - name: redis-data
+          persistentVolumeClaim:
+            claimName: redis-pvc
+        - name: www
+          emptyDir: {}
+      initContainers:
+        - name: init-nginx
+          image: busybox
+          command: ["sh", "-c", "echo Init container"]
+          volumeMounts:
+            - mountPath: "/www"
+              name: www
+      containers:
+        - name: redis-config-init
+          image: busybox
+          command: ["sh", "-c", "echo Redis config init container"]
+          volumeMounts:
+            - name: redis-config
+              mountPath: /etc/redis/
+        - name: redis
+          image: redis:7.0.2
+          command: ["redis-server", "/etc/redis/redis.conf"]
+          volumeMounts:
+            - name: redis-config
+              mountPath: /etc/redis/
+            - name: redis-data
+              mountPath: /data
+          livenessProbe:
+            exec:
+              command: ["redis-cli", "ping"]

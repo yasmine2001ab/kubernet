@@ -1,0 +1,27 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: nginx-pod-with-init
+  labels:
+    service: web-with-init
+spec:
+  volumes:
+    - name: www
+      emptyDir: {}
+  containers:
+    - name: nginx
+      image: nginx
+      ports:
+        - containerPort: 80
+          hostPort: 8081
+      volumeMounts:
+        - mountPath: /usr/share/nginx/html
+          name: www
+  initContainers:
+  - name: init-nginx
+    image: busybox
+    command: ["sh", "-c", "echo 'Kubernetes' > /usr/share/nginx/html/index.html'"]
+    volumeMounts:
+      - mountPath: /usr/share/nginx/html
+        name: www
+   

@@ -1,0 +1,42 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: counter-deployment
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: counter
+  template:
+    metadata:
+      labels:
+        app: counter
+    spec:
+      volumes:
+        - name: counter-app
+          emptyDir: {}
+        - name: redis-secret
+          secret:
+            secretName: redis-secret
+      initContainers:
+        - name: counter-app-init
+          image: alpine
+          command: ["sh", "-c", "minikube cp index.php /var/www/html/index.php"]
+          volumeMounts:
+            - name: counter-app
+              mountPath: /var/www/html
+      containers:
+        - name: counter-app
+          image: vladost/php:7.2-apache-redis
+          env:
+            - name: REDIS_HOST
+              value: redis-service
+          volumeMounts:
+            - name: counter-app
+              mountPath: /var/www/html
+            - name: redis-secret
+              mountPath: /credentials
+          livenessProbe:
+            httpGet:
+              path: /
+              port: 80
